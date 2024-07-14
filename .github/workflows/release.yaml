@@ -32,7 +32,6 @@ jobs:
       contents: read
       attestations: write
       id-token: write
-
     runs-on: ubuntu-22.04
     env:
       VERSION: ${{ needs.prepare.outputs.version_tag }}
