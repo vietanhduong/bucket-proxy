@@ -17,7 +17,7 @@ func newCommand() *cobra.Command {
 	v := viper.New()
 	cmd := &cobra.Command{
 		Use:   "bucket-proxy",
-		Short: "Proxy for cloud storage bucket",
+		Short: "A read bucket proxy server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if printVersion(cmd) {
 				return nil

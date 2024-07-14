@@ -1,0 +1,48 @@
+SHELL := /bin/bash
+.SHELLFLAGS = -euo pipefail -c
+
+PREFIX ?= /usr
+BINDIR ?= $(PREFIX)/bin
+LIBDIR ?= $(PREFIX)/lib
+LOCAL_STATE_DIR ?= /var
+
+export GO ?= go
+
+ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+include $(ROOT_DIR)/Makefile.version
+
+GO_BUILD_FLAGS :=
+GO_BUILD_LDFLAGS :=
+
+GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.Version=$(VERSION)"
+GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.GitCommit=$(GIT_COMMIT)"
+GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.BuildDate=$(BUILD_DATE)"
+
+ifeq ($(NOSTRIP),)
+# -w: Omit the DWARF symbol table.
+# -s: Omit the symbol table and debug information.
+GO_BUILD_LDFLAGS += -s -w
+endif
+
+GO_BUILD = CGO_ENABLED=0 $(GO) build
+
+ifneq ($(RACE),)
+    GO_BUILD_FLAGS += -race
+    GO_TEST_FLAGS += -race
+
+    # GO_BUILD becomes GO_BUILD_WITH_CGO as `-race` requires CGO
+    GO_BUILD = $(GO_BUILD_WITH_CGO)
+endif
+
+
+GO_BUILD_FLAGS += -ldflags '$(GO_BUILD_LDFLAGS) $(EXTRA_GO_BUILD_LDFLAGS)'
+
+# Disable optimizations if NOOPT is set to 1
+ifeq ($(NOOPT),1)
+GO_BUILD_FLAGS += -gcflags='all=-N -l'
+endif
+
+GO_BUILD += $(GO_BUILD_FLAGS)
+
+GO_TEST := CGO_ENABLED=0 $(GO) test $(GO_TEST_FLAGS)

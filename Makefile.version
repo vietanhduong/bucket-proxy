@@ -1,0 +1,22 @@
+IN_GIT := $(if $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/.git),true,false)
+
+ifeq ($(strip $(VERSION)),)
+ifeq ($(IN_GIT),true)
+BRANCH_NAME_ORIGINAL := $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH_NAME := $(subst /,-,$(BRANCH_NAME_ORIGINAL))
+SHORT_COMMIT_HASH := $(shell git rev-parse --short HEAD)
+override VERSION = $(BRANCH_NAME)-$(SHORT_COMMIT_HASH)
+else
+override VERSION = unknown
+endif
+endif
+
+BUILD_DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+ifeq ($(GIT_COMMIT),)
+ifeq ($(IN_GIT),true)
+override GIT_COMMIT = $(shell git rev-parse HEAD)
+else
+override GIT_COMMIT = unknown
+endif
+endif
