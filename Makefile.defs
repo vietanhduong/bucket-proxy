@@ -15,9 +15,9 @@ include $(ROOT_DIR)/Makefile.version
 GO_BUILD_FLAGS :=
 GO_BUILD_LDFLAGS :=
 
-GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.Version=$(VERSION)"
-GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.GitCommit=$(GIT_COMMIT)"
-GO_BUILD_LDFLAGS += -X "github.com/KyberNetwork/pilot/pkg/config/version.BuildDate=$(BUILD_DATE)"
+GO_BUILD_LDFLAGS += -X "github.com/vietanhduong/bucket-proxy/pkg/config.version=$(VERSION)"
+GO_BUILD_LDFLAGS += -X "github.com/vietanhduong/bucket-proxy/pkg/config.gitCommit=$(GIT_COMMIT)"
+GO_BUILD_LDFLAGS += -X "github.com/vietanhduong/bucket-proxy/pkg/config.buildDate=$(BUILD_DATE)"
 
 ifeq ($(NOSTRIP),)
 # -w: Omit the DWARF symbol table.
