@@ -1,0 +1,89 @@
+name: Release
+run-name: Release ${{ github.ref }}
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    outputs:
+      version_tag: ${{ steps.version_tag.outputs.value }}
+      build_date: ${{ steps.build_date.outputs.value }}
+    steps:
+      - name: Format version tag
+        shell: bash
+        id: version_tag
+        run: |
+          TAG=${GITHUB_REF#refs/*/}
+          echo "value=$TAG" >> $GITHUB_OUTPUT
+      - name: Build date
+        shell: bash
+        id: build_date
+        run: echo "value=$(date +%FT%T%z)" >> $GITHUB_OUTPUT
+
+  build:
+    needs:
+      - prepare
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version_tag }}
+      GIT_HASH: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Run docker push"
+        env:
+          BUILDPLATFORM: linux/amd64,linux/arm64
+        run: make docker-push
+
+  release:
+    needs:
+      - prepare
+      - build
+    permissions:
+      packages: write
+      contents: write
+      attestations: write
+      id-token: write
+    runs-on: ubuntu-22.04
+    env:
+      VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+
+      - name: Release
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
