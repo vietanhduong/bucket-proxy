@@ -31,3 +31,5 @@ LABEL org.opencontainers.image.licenses=MIT
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /tmp/install/${TARGETOS}/${TARGETARCH}/usr/bin/* /usr/bin/
+
+ENTRYPOINT [ "/usr/bin/bucket-proxy" ]

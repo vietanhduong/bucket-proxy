@@ -12,7 +12,7 @@ on:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       current_branch: ${{ steps.current_branch.outputs.value }}
       head_sha: ${{ steps.head_sha.outputs.value }}
@@ -63,7 +63,7 @@ jobs:
           echo "branch_tag=$branch_tag-$short_sha" >> $GITHUB_OUTPUT
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - prepare
     env:
