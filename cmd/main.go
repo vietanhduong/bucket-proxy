@@ -32,14 +32,19 @@ func newCommand() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("init bucket: %w", err)
 			}
-			p := proxy.New(b)
+			p := proxy.InitFromViper(b, v)
 			s := server.InitFromViper(v)
 			s.RegisterHandler(p)
 			return s.Run(ctx.Done())
 		},
 	}
 
-	addFlags(v, cmd, bucket.RegisterFlags, logging.RegisterFlags, server.RegisterFlags)
+	addFlags(v, cmd,
+		bucket.RegisterFlags,
+		logging.RegisterFlags,
+		server.RegisterFlags,
+		proxy.RegisterFlags,
+	)
 	return cmd
 }
 

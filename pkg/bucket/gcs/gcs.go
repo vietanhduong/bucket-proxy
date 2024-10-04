@@ -8,8 +8,12 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/vietanhduong/bucket-proxy/pkg/bucket/types"
 	"github.com/vietanhduong/bucket-proxy/pkg/config"
+	"github.com/vietanhduong/bucket-proxy/pkg/logging"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
+
+var log = logging.WithField("pkg", "pkg/bucket/gcs")
 
 type Client struct {
 	gcs    *storage.Client
@@ -38,28 +42,38 @@ func (c *Client) ObjectMetadata(ctx context.Context, path string) (*types.Object
 	}
 	obj := c.gcs.Bucket(c.bucket).Object(path)
 	attrs, err := obj.Attrs(ctx)
-	if err != nil {
-		if errors.Is(err, storage.ErrObjectNotExist) {
+	// if there is no error and the object is not deleted, return the object metadata
+	if err == nil {
+		// if the object is deleted, return nil
+		if !attrs.Deleted.IsZero() {
+			log.WithField("path", path).Trace("object deleted")
+			return nil, nil
+		}
+		var ret types.ObjectMetadata
+		ret.FromObjectAttrs(attrs)
+		return &ret, nil
+	}
+
+	// if the object does not exist, check if it is a directory
+	if !errors.Is(err, storage.ErrObjectNotExist) {
+		return nil, fmt.Errorf("object attrs: %w", err)
+	}
+
+	it := c.gcs.Bucket(c.bucket).Objects(ctx, &storage.Query{Prefix: path})
+
+	// get the first object in the directory, if it exists, it is a directory
+	// otherwise, the input path doesn't exist
+	if _, err = it.Next(); err != nil {
+		if err == iterator.Done {
+			log.WithField("path", path).Trace("object not found")
 			return nil, nil
 		}
 		return nil, fmt.Errorf("object attrs: %w", err)
 	}
-
-	if !attrs.Deleted.IsZero() {
-		return nil, nil
-	}
-
 	return &types.ObjectMetadata{
-		Bucket:             attrs.Bucket,
-		Name:               attrs.Name,
-		Size:               attrs.Size,
-		ContentType:        attrs.ContentType,
-		ContentLanguage:    attrs.ContentLanguage,
-		ContentEncoding:    attrs.ContentEncoding,
-		ContentDisposition: attrs.ContentDisposition,
-		CacheControl:       attrs.CacheControl,
-		Created:            attrs.Created,
-		Updated:            attrs.Updated,
+		Bucket:      c.bucket,
+		Name:        path,
+		IsDirectory: true,
 	}, nil
 }
 
@@ -72,9 +86,12 @@ func (c *Client) Download(ctx context.Context, path string, opts types.DownloadO
 		obj = obj.ReadCompressed(true)
 	}
 
-	var r *storage.Reader
-	var err error
+	attrs, err := obj.Attrs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("object attrs: %w", err)
+	}
 
+	var r *storage.Reader
 	if opts.Start == 0 && opts.Offset <= 0 {
 		r, err = obj.NewReader(ctx)
 	} else {
@@ -84,10 +101,9 @@ func (c *Client) Download(ctx context.Context, path string, opts types.DownloadO
 		return nil, fmt.Errorf("new reader: %w", err)
 	}
 
-	resp := &types.DownloadResponse{
-		Reader:          r,
-		Size:            r.Attrs.Size,
-		ContentEncoding: r.Attrs.ContentEncoding,
-	}
+	resp := &types.DownloadResponse{Reader: r}
+	resp.ObjectMetadata.FromObjectAttrs(attrs)
+	resp.Size = r.Attrs.Size
+	resp.ContentEncoding = r.Attrs.ContentEncoding
 	return resp, nil
 }
