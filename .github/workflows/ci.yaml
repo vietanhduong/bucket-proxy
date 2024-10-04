@@ -90,7 +90,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Run docker ${{ github.event_name != 'pull_request' && 'push' || 'build' }}"
-        env:
-          TARGET: ${{ github.event_name != 'pull_request' && 'push' || 'build' }}
-          BUILDPLATFORM: linux/amd64,linux/arm64
-        run: make docker-${TARGET}
+        run: |
+          BUILD_TARGET=docker-build
+          if [[ ! "$GITHUB_EVENT_NAME" = "pull_request" ]]; then
+            BUILD_TARGET=docker-push
+            export BUILDPLATFORM="linux/amd64,linux/arm64"
+          fi
+          make $BUILD_TARGET
