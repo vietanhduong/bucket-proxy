@@ -87,7 +87,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT}}
 
       - name: "Run docker ${{ github.event_name != 'pull_request' && 'push' || 'build' }}"
         run: |
