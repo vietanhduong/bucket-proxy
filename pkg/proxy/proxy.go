@@ -63,11 +63,6 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if attrs.IsDirectory {
-		p.handleIndexPage(w, r, path)
-		return
-	}
-
 	if last := handleModifySince(r); !last.IsZero() {
 		if !attrs.Updated.Truncate(time.Second).After(last) {
 			w.WriteHeader(304)
@@ -114,6 +109,7 @@ func (p *Proxy) handleNotFoundPage(w http.ResponseWriter, r *http.Request) {
 		}
 		log.WithError(err).Trace("failed to download not found page")
 	}
+	// TODO(vietanhduong): Implement a error page
 	http.Error(w, "not found", http.StatusNotFound)
 }
 
