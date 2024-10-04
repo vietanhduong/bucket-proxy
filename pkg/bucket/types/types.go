@@ -1,9 +1,12 @@
 package types
 
 import (
+	"errors"
 	"io"
 	"time"
 )
+
+var ErrEmptyPath = errors.New("empty path")
 
 type DownloadOptions struct {
 	AcceptCompress bool
@@ -13,6 +16,7 @@ type DownloadOptions struct {
 type ObjectMetadata struct {
 	Bucket             string
 	Name               string
+	IsDirectory        bool
 	ContentType        string
 	ContentLanguage    string
 	Size               int64
