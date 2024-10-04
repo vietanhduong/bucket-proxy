@@ -63,12 +63,6 @@ jobs:
           echo "branch_tag=$branch_tag-$short_sha" >> $GITHUB_OUTPUT
 
   build:
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
-
     runs-on: ubuntu-22.04
     needs:
       - prepare

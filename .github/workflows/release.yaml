@@ -27,11 +27,6 @@ jobs:
   build:
     needs:
       - prepare
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
 
     runs-on: ubuntu-22.04
     env:
@@ -49,7 +44,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT}}
 
       - name: "Run docker push"
         env:
@@ -86,4 +81,4 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
