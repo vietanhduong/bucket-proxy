@@ -49,18 +49,9 @@ func (c *Client) ObjectMetadata(ctx context.Context, path string) (*types.Object
 			log.WithField("path", path).Trace("object deleted")
 			return nil, nil
 		}
-		return &types.ObjectMetadata{
-			Bucket:             attrs.Bucket,
-			Name:               attrs.Name,
-			Size:               attrs.Size,
-			ContentType:        attrs.ContentType,
-			ContentLanguage:    attrs.ContentLanguage,
-			ContentEncoding:    attrs.ContentEncoding,
-			ContentDisposition: attrs.ContentDisposition,
-			CacheControl:       attrs.CacheControl,
-			Created:            attrs.Created,
-			Updated:            attrs.Updated,
-		}, nil
+		var ret types.ObjectMetadata
+		ret.FromObjectAttrs(attrs)
+		return &ret, nil
 	}
 
 	// if the object does not exist, check if it is a directory
@@ -95,9 +86,12 @@ func (c *Client) Download(ctx context.Context, path string, opts types.DownloadO
 		obj = obj.ReadCompressed(true)
 	}
 
-	var r *storage.Reader
-	var err error
+	attrs, err := obj.Attrs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("object attrs: %w", err)
+	}
 
+	var r *storage.Reader
 	if opts.Start == 0 && opts.Offset <= 0 {
 		r, err = obj.NewReader(ctx)
 	} else {
@@ -107,10 +101,9 @@ func (c *Client) Download(ctx context.Context, path string, opts types.DownloadO
 		return nil, fmt.Errorf("new reader: %w", err)
 	}
 
-	resp := &types.DownloadResponse{
-		Reader:          r,
-		Size:            r.Attrs.Size,
-		ContentEncoding: r.Attrs.ContentEncoding,
-	}
+	resp := &types.DownloadResponse{Reader: r}
+	resp.ObjectMetadata.FromObjectAttrs(attrs)
+	resp.Size = r.Attrs.Size
+	resp.ContentEncoding = r.Attrs.ContentEncoding
 	return resp, nil
 }
